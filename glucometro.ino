@@ -13,7 +13,7 @@ void setup() {
 
 void loop() {
   
-  uint32_t val = random(50, 250);  
+  uint32_t val = random(50, 250);  //
 
   // print on desktop app
   Serial.println(val);
