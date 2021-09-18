@@ -13,7 +13,7 @@ BluetoothSerial bt;
 // global vars for movil app
 
 // global vars for screen
-U8X8_SSD1306_128X64_NONAME_4W_SW_SPI u8x8( /*clock=*/ 22,  /*data= */21, /* cs=*/ -1, /* dc=*/ 19, /* reset=*/ 23);
+U8X8_SSD1306_128X64_NONAME_4W_SW_SPI u8x8( /*clock=*/ 15,  /*data= */2, /* cs=*/ -1, /* dc=*/ 5, /* reset=*/ 4);
 
 void setup() {
   // setup for desktop app
