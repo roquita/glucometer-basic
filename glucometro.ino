@@ -62,7 +62,7 @@ void loop() {
   //Serial.printf("impedancia: %.3f ||", impedance);
 
   // convert impedance to glucose level
-  int32_t val = impedance_to_glucose(impedance); 
+  int32_t val = impedance_to_glucose(impedance);
 
   // bound glucose level
   val = val < 0 ? 0 : (val > 999 ? 999 : val) ;
@@ -95,7 +95,7 @@ void loop() {
   u8x8.setFont(u8x8_font_px437wyse700b_2x2_r);
   u8x8.drawString(2, 3, num);
 
-  delay(2000);
+  delay(100);
 }
 double frequencySweepEasy() {
   // Create arrays to hold the data
@@ -132,5 +132,8 @@ double frequencySweepEasy() {
   }
 }
 int32_t impedance_to_glucose(double impedance) {
-  return impedance / 100.0;
+  const double m = 21.923076923076923076923076923077;
+  const double b = 0.0;
+
+  return (int32_t)((impedance / 1000.0) * m + b);
 }
