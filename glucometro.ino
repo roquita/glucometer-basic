@@ -27,8 +27,9 @@ BluetoothSerial bt;
 // global vars for screen
 U8X8_SSD1306_128X64_NONAME_4W_SW_SPI u8x8(/*clock=*/15, /*data= */ 2, /* cs=*/-1, /* dc=*/5, /* reset=*/4);
 
-// global vars for ad5933
-double gain[NUM_INCR + 1] = {0.000000010256, 0.000000010264};
+// calibration for ad5933
+// double gain[NUM_INCR + 1] = {0.000000010256, 0.000000010264};
+double gain[NUM_INCR + 1] = {0.000000010288, 0.000000010288};
 int phase[NUM_INCR + 1] = {1, 1};
 
 void setup()
@@ -67,7 +68,8 @@ void setup()
 void loop()
 {
   // read impedance from ad5933
-  double impedance = frequencySweepEasy() * 1.015 - 246.133;
+  // double impedance = frequencySweepEasy() * 1.015 - 246.133;
+  double impedance = frequencySweepEasy();
   // Serial.printf("impedancia: %.3f ||", impedance);
 
   // convert impedance to glucose level
@@ -156,8 +158,11 @@ double frequencySweepEasy()
       double magnitude = sqrt(pow(real[i], 2) + pow(imag[i], 2));
       impedance = 1 / (magnitude * gain[i]);
       /*
-        Serial.print("  |Z|=");
-        Serial.println(impedance);*/
+            Serial.print("  magnitude =");
+            Serial.print(magnitude, 12);
+            Serial.print("  impedance =");
+            Serial.println(impedance, 12);
+      */
     }
     // Serial.println("Frequency sweep complete!");
     return impedance;
@@ -173,8 +178,11 @@ int32_t impedance_to_glucose(double impedance)
   // const double m = 21.923076923076923076923076923077;
   // const double b = 0.0;
 
-  const double m = 106.84615384615385;
-  const double b = 0.0;
+  /*
+    const double m = 106.84615384615385;
+    const double b = 0.0;
 
-  return (int32_t)(((impedance - 10000.0) / 1000.0) * m + b);
+    return (int32_t)(((impedance - 10000.0) / 1000.0) * m + b);
+    */
+  return (int32_t)((impedance-10000.0)  / 100.0);
 }
