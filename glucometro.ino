@@ -1,3 +1,7 @@
+// EEPROM
+#include <Preferences.h>
+Preferences preferences;
+bool value_not_shown = true;
 
 // headers for movil app
 #include "BluetoothSerial.h"
@@ -13,21 +17,22 @@ BluetoothSerial bt;
 // headers fro ad5933
 #include <Wire.h>
 #include "AD5933.h"
-#define START_FREQ  (50000)
-#define FREQ_INCR   (1000)
-#define NUM_INCR    (1)
-#define REF_RESIST  (17530)
+#define START_FREQ (50000)
+#define FREQ_INCR (1000)
+#define NUM_INCR (1)
+#define REF_RESIST (17530)
 
 // global vars for movil app
 
 // global vars for screen
-U8X8_SSD1306_128X64_NONAME_4W_SW_SPI u8x8( /*clock=*/ 15,  /*data= */2, /* cs=*/ -1, /* dc=*/ 5, /* reset=*/ 4);
+U8X8_SSD1306_128X64_NONAME_4W_SW_SPI u8x8(/*clock=*/15, /*data= */ 2, /* cs=*/-1, /* dc=*/5, /* reset=*/4);
 
 // global vars for ad5933
 double gain[NUM_INCR + 1] = {0.000000010256, 0.000000010264};
 int phase[NUM_INCR + 1] = {1, 1};
 
-void setup() {
+void setup()
+{
   // setup for desktop app
   Serial.begin(9600);
 
@@ -52,21 +57,25 @@ void setup() {
         AD5933::setPGAGain(PGA_GAIN_X1)))
   {
     Serial.println("FAILED in initialization!");
-    while (true) ;
+    while (true)
+      ;
   }
+
+  pinMode(0, INPUT_PULLUP);
 }
 
-void loop() {
+void loop()
+{
   // read impedance from ad5933
   double impedance = frequencySweepEasy() * 1.015 - 246.133;
-  //Serial.printf("impedancia: %.3f ||", impedance);
+  // Serial.printf("impedancia: %.3f ||", impedance);
 
   // convert impedance to glucose level
   int32_t val = impedance_to_glucose(impedance);
 
   // bound glucose level
-  val = val < 0 ? 0 : (val > 999 ? 999 : val) ;
-  //Serial.printf("glucosa: %i\n", val);
+  val = val < 0 ? 0 : (val > 999 ? 999 : val);
+  // Serial.printf("glucosa: %i\n", val);
 
   // print on desktop app
   Serial.println(val);
@@ -75,38 +84,65 @@ void loop() {
   bt.println(val);
 
   // print on screen
-  char num[30] = {0} ;
+  char num[30] = {0};
   sprintf(num, "%3i", val);
 
   char result[30] = {0};
   if (val >= 0 && val <= 53)
     sprintf(result, "%s", "hipoglicemia  N2");
-  else if ( val >= 54 && val <= 69)
+  else if (val >= 54 && val <= 69)
     sprintf(result, "%s", "hipoglicemia  N1");
-  else if ( val >= 70 && val <= 180)
+  else if (val >= 70 && val <= 180)
     sprintf(result, "%s", "homoglicemia  OK");
-  else if ( val >= 181 && val <= 250)
+  else if (val >= 181 && val <= 250)
     sprintf(result, "%s", "hiperglicemia N1");
-  else if ( val >= 251 )
+  else if (val >= 251)
     sprintf(result, "%s", "hiperglicemia N2");
 
   u8x8.setFont(u8x8_font_8x13B_1x2_r);
   u8x8.drawString(0, 6, result);
   u8x8.setFont(u8x8_font_px437wyse700b_2x2_r);
-  u8x8.drawString(2, 3, num);
+  u8x8.drawString(2, 2, num);
+
+  // EEPROM
+  if (digitalRead(0) == LOW)
+  {
+    value_not_shown = true;
+    preferences.begin("savedvalue", false);
+    preferences.putInt("glucose", val);
+    preferences.end();
+  }
+
+  if (value_not_shown)
+  {
+    value_not_shown = false;
+
+    preferences.begin("savedvalue", false);
+    int32_t saved_val = preferences.getInt("glucose", 0);
+    preferences.end();
+
+    char text[20] = {0};
+    sprintf(text, "[%3i]", saved_val);
+
+    u8x8.setFont(u8x8_font_chroma48medium8_r);
+    u8x8.drawString(3, 4, text);
+  }
 
   delay(100);
 }
-double frequencySweepEasy() {
+double frequencySweepEasy()
+{
   // Create arrays to hold the data
   int real[NUM_INCR + 1], imag[NUM_INCR + 1];
 
   // Perform the frequency sweep
-  if (AD5933::frequencySweep(real, imag, NUM_INCR + 1)) {
+  if (AD5933::frequencySweep(real, imag, NUM_INCR + 1))
+  {
     // Print the frequency data
     int cfreq = START_FREQ / 1000;
     double impedance = 0.0;
-    for (int i = 0; i < NUM_INCR + 1; i++, cfreq += FREQ_INCR / 1000) {
+    for (int i = 0; i < NUM_INCR + 1; i++, cfreq += FREQ_INCR / 1000)
+    {
       // Print raw frequency data
       /*
         Serial.print(cfreq);
@@ -122,18 +158,23 @@ double frequencySweepEasy() {
       /*
         Serial.print("  |Z|=");
         Serial.println(impedance);*/
-
     }
-    //Serial.println("Frequency sweep complete!");
+    // Serial.println("Frequency sweep complete!");
     return impedance;
-  } else {
-    //Serial.println("Frequency sweep failed...");
+  }
+  else
+  {
+    // Serial.println("Frequency sweep failed...");
     return -1.0;
   }
 }
-int32_t impedance_to_glucose(double impedance) {
-  const double m = 21.923076923076923076923076923077;
+int32_t impedance_to_glucose(double impedance)
+{
+  // const double m = 21.923076923076923076923076923077;
+  // const double b = 0.0;
+
+  const double m = 106.84615384615385;
   const double b = 0.0;
 
-  return (int32_t)((impedance / 1000.0) * m + b);
+  return (int32_t)(((impedance - 10000.0) / 1000.0) * m + b);
 }
